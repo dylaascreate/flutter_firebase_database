@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter_firebase/myData.dart';
+import 'package:flutter_firebase/myData.dart'; // Adjust import path if needed
 
 class ShowDataPage extends StatefulWidget {
   @override
@@ -12,58 +12,66 @@ class _ShowDataPageState extends State<ShowDataPage> {
 
   @override
   void initState() {
-    DatabaseReference ref = FirebaseDatabase.instance.reference();
-    ref.child('node-name').once().then((DataSnapshot snap) {
-      var keys = snap.value.keys;
-      var data = snap.value;
+    super.initState();
+    _fetchData();
+  }
+
+  void _fetchData() async {
+    final ref = FirebaseDatabase.instance.ref().child('node-name');
+    final event = await ref.once();
+    final snapshot = event.snapshot;
+
+    if (snapshot.value != null && snapshot.value is Map<dynamic, dynamic>) {
+      final data = snapshot.value as Map<dynamic, dynamic>;
+
       allData.clear();
-      for (var key in keys) {
-        myData d = new myData(
-          data[key]['name'],
-          data[key]['message'],
-          data[key]['profession'],
-        );
-        allData.add(d);
-      }
-      setState(() {
-        print('Length : ${allData.length}');
+
+      data.forEach((key, value) {
+        if (value is Map<dynamic, dynamic>) {
+          final name = value['name']?.toString() ?? '';
+          final message = value['message']?.toString() ?? '';
+          final profession = value['profession']?.toString() ?? '';
+
+          allData.add(myData(name, message, profession));
+        }
       });
-    });
+
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: new AppBar(
-        title: new Text('Firebase Data'),
-      ),
-      body: new Container(
-          child: allData.length == 0
-              ? new Text(' No Data is Available')
-              : new ListView.builder(
-                  itemCount: allData.length,
-                  itemBuilder: (_, index) {
-                    return UI(
-                      allData[index].name,
-                      allData[index].profession,
-                      allData[index].message,
-                    );
-                  },
-                )),
+      appBar: AppBar(title: Text('Firebase Data')),
+      body: allData.isEmpty
+          ? Center(child: Text('No Data is Available'))
+          : ListView.builder(
+              itemCount: allData.length,
+              itemBuilder: (_, index) {
+                return _buildCard(
+                  allData[index].name,
+                  allData[index].profession,
+                  allData[index].message,
+                );
+              },
+            ),
     );
   }
 
-  Widget UI(String name, String profession, String message) {
-    return new Card(
+  Widget _buildCard(String name, String profession, String message) {
+    return Card(
       elevation: 10.0,
-      child: new Container(
-        padding: new EdgeInsets.all(20.0),
-        child: new Column(
+      margin: const EdgeInsets.all(10),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            new Text('Name : $name',style: Theme.of(context).textTheme.title,),
-            new Text('Profession : $profession'),
-            new Text('Message : $message'),
+          children: [
+            Text('Name: $name',
+                style: Theme.of(context).textTheme.titleLarge),
+            Text('Profession: $profession'),
+            Text('Message: $message'),
           ],
         ),
       ),

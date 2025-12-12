@@ -1,15 +1,18 @@
 name: flutter_firebase
 description: A new Flutter application.
 
+environment:
+  sdk: ^3.7.2
+
 dependencies:
   flutter:
     sdk: flutter
+  firebase_core:
+  firebase_database:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.2
-  firebase_core:
-  firebase_database:
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:

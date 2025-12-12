@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter_firebase/ShowDataPage.dart';
+import 'ShowDataPage.dart'; // Update the path if needed
 
-void main() => runApp(new MaterialApp(home: new MyApp()));
+void main() => runApp(MaterialApp(home: MyApp()));
 
 class MyApp extends StatefulWidget {
   @override
@@ -10,118 +10,128 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  GlobalKey<FormState> _key = new GlobalKey();
-  bool _autovalidate = false;
-  String name, profession, message;
-  List<DropdownMenuItem<String>> items = [
-    new DropdownMenuItem(
-      child: new Text('Student'),
+  final GlobalKey<FormState> _key = GlobalKey();
+  bool _autoValidate = false;
+  String name = '';
+  String profession = '';
+  String message = '';
+
+  final List<DropdownMenuItem<String>> items = [
+    DropdownMenuItem(
+      child: Text('Student'),
       value: 'Student',
     ),
-    new DropdownMenuItem(
-      child: new Text('Professor'),
+    DropdownMenuItem(
+      child: Text('Professor'),
       value: 'Professor',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-        appBar: new AppBar(
-          title: new Text('Firebase Database'),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Firebase Database'),
+      ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(15.0),
+        child: Form(
+          key: _key,
+          autovalidateMode: _autoValidate
+              ? AutovalidateMode.always
+              : AutovalidateMode.disabled,
+          child: _buildFormUI(),
         ),
-        body: new SingleChildScrollView(
-          child: new Container(
-            padding: new EdgeInsets.all(15.0),
-            child: new Form(
-              key: _key,
-              autovalidate: _autovalidate,
-              child: FormUI(),
-            ),
-          ),
-        ),
+      ),
     );
   }
 
-  Widget FormUI() {
-    return new Column(
+  Widget _buildFormUI() {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        new Row(
-          children: <Widget>[
-            new Flexible(
-              child: new TextFormField(
-                decoration: new InputDecoration(hintText: 'Name'),
-                validator: validateName,
-                onSaved: (val) {
-                  name = val;
-                },
+      children: [
+        Row(
+          children: [
+            Flexible(
+              child: TextFormField(
+                decoration: InputDecoration(hintText: 'Name'),
+                validator: _validateName,
+                onSaved: (val) => name = val ?? '',
                 maxLength: 32,
               ),
             ),
-            new SizedBox(width: 10.0),
-            new DropdownButtonHideUnderline(
-                child: new DropdownButton(
-              items: items,
-              hint: new Text('Profession'),
-              value: profession,
-              onChanged: (String val) {
-                setState(() {
-                  profession = val;
-                });
-              },
-            ))
+            SizedBox(width: 10.0),
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                items: items,
+                hint: Text('Profession'),
+                value: profession.isNotEmpty ? profession : null,
+                onChanged: (val) {
+                  setState(() {
+                    profession = val ?? '';
+                  });
+                },
+              ),
+            ),
           ],
         ),
-        new TextFormField(
-          decoration: new InputDecoration(hintText: 'Message'),
-          onSaved: (val) {
-            message = val;
-          },
-          validator: validateMessage,
+        TextFormField(
+          decoration: InputDecoration(hintText: 'Message'),
+          onSaved: (val) => message = val ?? '',
+          validator: _validateMessage,
           maxLines: 5,
           maxLength: 256,
         ),
-        new RaisedButton(
+        SizedBox(height: 16),
+        ElevatedButton(
           onPressed: _sendToServer,
-          child: new Text('Send'),
+          child: Text('Send'),
         ),
-        new SizedBox(height: 20.0),
-        new RaisedButton(
+        SizedBox(height: 20.0),
+        ElevatedButton(
           onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => new ShowDataPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ShowDataPage()),
+            );
           },
-          child: new Text('Show Data'),
-        )
+          child: Text('Show Data'),
+        ),
       ],
     );
   }
 
-  _sendToServer() {
-    if (_key.currentState.validate()) {
-      _key.currentState.save();
-      DatabaseReference ref = FirebaseDatabase.instance.reference();
-      var data = {
+  void _sendToServer() async {
+    if (_key.currentState?.validate() ?? false) {
+      _key.currentState?.save();
+
+      final ref = FirebaseDatabase.instance.ref().child('node-name');
+
+      final data = {
         "name": name,
         "profession": profession,
         "message": message,
       };
-      ref.child('node-name').push().set(data).then((v) {
-        _key.currentState.reset();
+
+      await ref.push().set(data);
+      _key.currentState?.reset();
+      setState(() {
+        profession = '';
       });
     } else {
       setState(() {
-        _autovalidate = true;
+        _autoValidate = true;
       });
     }
   }
 
-  String validateName(String val) {
-    return val.length == 0 ? "Enter Name First" : null;
+  String? _validateName(String? val) {
+    if (val == null || val.isEmpty) return "Enter Name First";
+    return null;
   }
 
-  String validateMessage(String val) {
-    return val.length == 0 ? "Enter Email First" : null;
+  String? _validateMessage(String? val) {
+    if (val == null || val.isEmpty) return "Enter Message First";
+    return null;
   }
 }
